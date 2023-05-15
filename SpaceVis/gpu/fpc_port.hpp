@@ -76,7 +76,7 @@ namespace FPC{
 
             void synchronize();
 
-            ~Lib(){
+            void cleanup(){
                 #ifdef FPC_LOGGING
                 std::cout << "Finalizing" << std::endl;
                 #endif
@@ -84,6 +84,10 @@ namespace FPC{
                 #ifdef FPC_LOGGING
                 std::cout << "Finalized" << std::endl;
                 #endif
+            }
+
+            ~Lib(){
+                
             }
             #endif
     };
