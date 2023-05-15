@@ -16,7 +16,7 @@ extern "C"{
 }
 
 extern "C"{
-    void draw_frame(float* h_out, 
+    void draw_frame(int* h_out, 
                         float cam_x, float cam_y, float cam_z,
                         float rot_x, float rot_y, float rot_z,
                         float e_x, float e_y, float e_z,
@@ -29,6 +29,6 @@ extern "C"{
         d_particles.set(h_particles);
 
         FPC::Buffer d_out;
-        d_out.allocate<float>(im_x*im_y);
+        d_out.allocate<int>(im_x*im_y*3);
     }
 }
