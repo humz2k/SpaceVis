@@ -4,16 +4,17 @@
 #include <iostream>
 #include "camera_utils.hpp"
 #include <math.h>
+#include <time.h>
 
 inline float project(float z, float xy, float e_z, float e_xy, float im_size, float box_size){
-    return ((((e_z/z)*xy + e_xy) + (box_size/2.f))/box_size)*(im_size - 1.f);
+    return (((((e_z/z)*xy + e_xy))/box_size) + 0.5)*(im_size - 1.f);
 }
 
 inline void draw_point(float in_x, float in_y, float in_z, float* cam_pos, float* cam_rot, float* e, int im_x, int im_y, int interp_radius, float box_size, Matrix rmat, float* out){
-    Vector point = rmat * Vector(in_x,in_y,in_z);
-    float x = point(0);
-    float y = point(1);
-    float z = point(2);
+    //Vector point = rmat * Vector(in_x,in_y,in_z);
+    float x = rmat(0,0) * in_x + rmat(0,1) * in_y + rmat(0,2) * in_z;
+    float y = rmat(1,0) * in_x + rmat(1,1) * in_y + rmat(1,2) * in_z;
+    float z = rmat(2,0) * in_x + rmat(2,1) * in_y + rmat(2,2) * in_z;
     if (z >= 0){
         float f_im_x = (float)im_x;
         float f_im_y = (float)im_y;
@@ -49,8 +50,11 @@ inline void draw_point(float in_x, float in_y, float in_z, float* cam_pos, float
 
 extern "C"{
     void draw_frame(float* out, float* cam_pos, float* cam_rot, float* e, int im_x, int im_y, int interp_radius, float* raw_points, int n_points, float box_size, int x_reps, int y_reps, int z_reps){//float* raw_points, int n_points, int interp_radius, float* out){
-        std::vector<float> points = ptr2vec(raw_points,n_points*3);
+        //std::vector<float> points = ptr2vec(raw_points,n_points*3);
         //points = camTransform(Vector(cam_pos[0],cam_pos[1],cam_pos[2]),Vector(cam_rot[0],cam_rot[1],cam_rot[2]),points);
+
+        long start = clock();
+
         float f_im_x = (float)im_x;
         float f_im_y = (float)im_y;
         float f_interp_radius = (float)interp_radius;
@@ -60,14 +64,17 @@ extern "C"{
         int hzreps = z_reps/2;
 
         Matrix rmat = RotMat(cam_rot[0],cam_rot[1],cam_rot[2]);
+        int last = -1;
+
+        long init_done = clock();
 
         for (int i = 0; i < n_points; i++){
             
-            float x = points[i*3] - cam_pos[0];
-            float y = points[i*3+1] - cam_pos[1];
-            float z = points[i*3+2] - cam_pos[2];
+            float x = raw_points[i*3] - cam_pos[0];
+            float y = raw_points[i*3+1] - cam_pos[1];
+            float z = raw_points[i*3+2] - cam_pos[2];
 
-            /*while (z > box_size){
+            while (z > box_size){
                 z = z - box_size;
             }
             while (z < 0){
@@ -86,20 +93,28 @@ extern "C"{
             }
             while (y < 0){
                 x = x + box_size;
-            }*/
+            }
 
-            //for (int x_mul = -hxreps; x_mul < (hxreps+1); x_mul++){
-            //    for (int y_mul = -hyreps; y_mul < (hyreps+1); y_mul++){
-            //        for (int z_mul = -hzreps; z_mul < (hzreps+1); z_mul++){
-            int x_mul = 0;
-            int y_mul = 0;
-            int z_mul = 0;
+            for (int x_mul = -hxreps; x_mul < (hxreps+1); x_mul++){
+                for (int y_mul = -hyreps; y_mul < (hyreps+1); y_mul++){
+                    for (int z_mul = -hzreps; z_mul < (hzreps+1); z_mul++){
+            //int x_mul = 0;
+            //int y_mul = 0;
+            //int z_mul = 0;
             draw_point(x + ((float)x_mul)*box_size, y + ((float)y_mul)*box_size, z + ((float)z_mul)*box_size, cam_pos,cam_rot,e,im_x,im_y,interp_radius,box_size,rmat,out);
                         
-            //        }
-            //    }
-            //}
+                    }
+                }
+            }
         }
+
+        rmat.free_ptr();
+        long all_done = clock();
+
+        double init_time = ((double)(init_done-start))/((double)CLOCKS_PER_SEC);
+        double loop_time = ((double)(all_done-init_done))/((double)CLOCKS_PER_SEC);
+
+        printf("INIT_TIME %f\nLOOP_TIME %f\n",init_time,loop_time);
     }
 }
 
