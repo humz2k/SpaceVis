@@ -81,7 +81,7 @@ def draw_parallel(n_threads,n_frames,data,im_x,im_y,ng=32,depth_bin_end=128,dept
     if __name__ == '__main__':
         start = time.perf_counter()
         with Pool(n_threads) as p:
-            p.map(__draw, map_inputs)
+            p.map(__draw, map_inputs[:120])
         end = time.perf_counter()
         print("Executed in: " + str(end - start))
 
@@ -103,7 +103,7 @@ def keyframes(*keyframes):
     #return map_inputs
 
 n_threads = 5
-n_frames = 200
+n_frames = 260
 Ng = 32
 steps = 200
 n_particles = Ng*Ng*Ng
@@ -116,33 +116,35 @@ col_max = 40
 rot_z = 0
 
 zoom_start = 30
-zoom_end = 60
-unzoom_start = 170
-unzoom_end = 200
+zoom_end = 80
+unzoom_start = 120
+unzoom_end = 170
+expand_start = 200
+end_expand = 230
 
 cam_pos_x = keyframes((0,16),(n_frames,16))
 cam_pos_y = keyframes((0,16),(n_frames,16))
 cam_pos_z = keyframes((0,0),(n_frames,0))
 
 shake_x,shake_y = SpaceVis.camera_shaker.get_camera_shake(n_frames,octaves=1)
-cam_rot_x = keyframes((0,0),(n_frames,0)) + shake_x * keyframes((0,1),(zoom_start-5,1),(zoom_start,0.01),(unzoom_end,0.01))
-cam_rot_y = keyframes((0,0),(n_frames,0)) + shake_y * keyframes((0,1),(zoom_start-5,1),(zoom_start,0.01),(unzoom_end,0.01))
+cam_rot_x = keyframes((0,0),(end_expand,0),(n_frames,np.pi/2)) + shake_x * keyframes((0,1),(zoom_start-5,1),(zoom_start,0.01),(unzoom_end,0.01),(unzoom_end+5,1),(n_frames,1))
+cam_rot_y = keyframes((0,0),(end_expand,0),(n_frames,np.pi/2)) + shake_y * keyframes((0,1),(zoom_start-5,1),(zoom_start,0.01),(unzoom_end,0.01),(unzoom_end+5,1),(n_frames,1))
 #plt.plot(cam_rot_x)
 #plt.plot(cam_rot_y)
 #plt.show()
-cam_rot_z = keyframes((0,0),(n_frames,0))
+cam_rot_z = keyframes((0,0),(unzoom_end,0),(n_frames,2))
 
 e_x = keyframes((0,0),(n_frames,0))
 e_y = keyframes((0,0),(n_frames,0))
 #e_z = keyframes((0,10),(zoom_start,10),(zoom_end,30000),(unzoom_start,30000),(unzoom_end,10))#[::-1]
-e_z = keyframes((0,10),(zoom_start,10),((unzoom_start - zoom_end)//2 + zoom_end,30000),(unzoom_end,10))#[::-1] 
+e_z = keyframes((0,10),(zoom_start,10),((unzoom_start - zoom_end)//2 + zoom_end,30000),(unzoom_end,10),(n_frames,10))#[::-1] 
 
-scale = keyframes((0,0.001),(n_frames,0.001))
-blur_focus = keyframes((0,-128),(20,0),(zoom_start,16),(zoom_end,-128),((unzoom_start-zoom_end)//2 + zoom_end - 30,16),((unzoom_start-zoom_end)//2 + zoom_end + 30,16),(unzoom_start,-128),(unzoom_end,16))#[::-1] #np.linspace(-128,16,n_frames,dtype=np.float32)#np.zeros(n_frames,dtype=np.float32)
+scale = keyframes((0,0.001),(expand_start,0.001),(end_expand,1),(n_frames,1))
+blur_focus = keyframes((0,-128),(20,0),(zoom_start,16),(zoom_end,-16),((unzoom_start-zoom_end)//2 + zoom_end - 10,16),((unzoom_start-zoom_end)//2 + zoom_end + 10,16),(unzoom_start,-16),(unzoom_end,16),(end_expand,16),(n_frames,5))#[::-1] #np.linspace(-128,16,n_frames,dtype=np.float32)#np.zeros(n_frames,dtype=np.float32)
 sqr = keyframes((0,2),(n_frames,2))
-data_frames = np.arange(n_frames,dtype=np.int32)
+data_frames = np.concatenate((np.arange(200,dtype=np.int32),np.array([-1]*(n_frames-200),dtype=np.int32)))
 
-v_max = keyframes((0,0),(zoom_end-1,0),(zoom_end,0.01),(unzoom_start-1,0.01),(unzoom_start,0),(unzoom_end,0))#keyframes((0,500),(zoom_start-1,500),(zoom_start,0),(zoom_end-1,0),(zoom_end,0.03),(unzoom_start-1,0.03),(unzoom_start,0),(unzoom_end-1,0),(unzoom_end,500))#keyframes((0,500),(30,500),(31,50),(38,5),(50,2),(60,0.5),(112,1),(120,500))#[::-1]
+v_max = keyframes((0,0),(unzoom_end,0),(expand_start-1,0),(expand_start,0.03),(n_frames,0.03))#keyframes((0,500),(zoom_start-1,500),(zoom_start,0),(zoom_end-1,0),(zoom_end,0.03),(unzoom_start-1,0.03),(unzoom_start,0),(unzoom_end-1,0),(unzoom_end,500))#keyframes((0,500),(30,500),(31,50),(38,5),(50,2),(60,0.5),(112,1),(120,500))#[::-1]
 
 data = np.fromfile("data/small_sim.dat",dtype=np.float32)
 data = data.reshape(steps+1,n_particles,3)
