@@ -53,6 +53,37 @@ def interpolate(keyframes,degree = 3,sub_sample=2):
     return np.array(out_ys)
 
 
+def keyframes(*keyframes,degree=3,sub_sample=2):
+    out = []
+    for i in range(len(keyframes)-1):
+        start = keyframes[i]
+        end = keyframes[i+1]
+        begin_frame = start[0]
+        end_frame = end[0]
+        start_val = start[1]
+        end_val = end[1]
+        if len(end) == 0:
+            out += (np.linspace(start_val,end_val,end_frame - begin_frame)**2).tolist()
+        else:
+            out += np.linspace(start_val,end_val,end_frame - begin_frame).tolist()
+    interpolated = interpolate(np.array(out,dtype=np.float32),degree=degree,sub_sample=sub_sample)
+    return interpolated
+
+def raw_keyframes(*keyframes):
+    out = []
+    for i in range(len(keyframes)-1):
+        start = keyframes[i]
+        end = keyframes[i+1]
+        begin_frame = start[0]
+        end_frame = end[0]
+        start_val = start[1]
+        end_val = end[1]
+        if len(end) == 0:
+            out += (np.linspace(start_val,end_val,end_frame - begin_frame)**2).tolist()
+        else:
+            out += np.linspace(start_val,end_val,end_frame - begin_frame).tolist()
+    return np.array(out,dtype=np.float32)
+'''
 if __name__ == '__main__':
     #n_knots = 6
     #t = list(range(n_knots))
@@ -84,3 +115,4 @@ if __name__ == '__main__':
     print(out_xs,out_ys)
     plt.plot(out_ys)
     plt.show()
+'''
